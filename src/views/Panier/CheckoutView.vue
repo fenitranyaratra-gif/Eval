@@ -1,200 +1,216 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { orderService } from '@/services/orderService';
-import { useRouter } from 'vue-router';
+import { ref, onMounted, watch } from "vue";
+import { orderService } from "@/services/orderService";
+import { useRouter } from "vue-router";
 
 const router = useRouter();
+
 const loading = ref(false);
-const error = ref('');
-const profile = ref(null); // Ajout de la ref pour profile
+const error = ref("");
+const profile = ref(null);
 
 const defaultAddress = {
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '0000000000',
-    address: 'Adresse par défaut',
-    city: 'Antananarivo',
-    state: 'Analamanga',  // ← ajoute ça
-    country: 'MG',
-    postcode: '101'
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone: "0000000000",
+  address: "Adresse par défaut",
+  city: "Antananarivo",
+  state: "Analamanga",
+  country: "MG",
+  postcode: "101",
 };
 
 onMounted(async () => {
-    console.log('=== DÉBUT onMounted ===');
-    console.log('🔄 Récupération du profil utilisateur...');
-    
-    try {
-        const response = await orderService.getProfile();
-        console.log('📦 Réponse complète getProfile:', response);
-        console.log('📊 Data du profil:', response?.data);
-        
-        profile.value = response?.data;
-        
-        if (response?.data) {
-            console.log('✅ Profil chargé avec succès');
-            console.log('👤 Détails profil:', {
-                id: response.data.id,
-                email: response.data.email,
-                first_name: response.data.first_name,
-                last_name: response.data.last_name,
-                full_name: `${response.data.first_name} ${response.data.last_name}`
-            });
-            
-            // Mettre à jour l'adresse par défaut
-            defaultAddress.email = response.data.email || '';
-            defaultAddress.first_name = response.data.first_name || 'Client';
-            defaultAddress.last_name = response.data.last_name || 'Default';
-            
-            console.log('📝 Adresse par défaut après mise à jour:', {
-                first_name: defaultAddress.first_name,
-                last_name: defaultAddress.last_name,
-                email: defaultAddress.email
-            });
-        } else {
-            console.warn('⚠️ Aucune donnée profil reçue');
-        }
-        
-    } catch (error) {
-        console.error('❌ Erreur lors du chargement du profil:', error);
-        console.error('Détails erreur:', error.response?.data || error.message);
+  try {
+    const response = await orderService.getProfile();
+
+    profile.value = response?.data;
+
+    if (response?.data) {
+      defaultAddress.email = response.data.email || "";
+      defaultAddress.first_name = response.data.first_name || "Client";
+      defaultAddress.last_name = response.data.last_name || "Default";
+
+      console.log("Profil chargé :", response.data);
     }
-    
-    console.log('=== FIN onMounted ===');
+  } catch (error) {
+    console.error("Erreur profil :", error);
+  }
 });
 
-// Ajout d'un watch pour surveiller les changements du profil
-import { watch } from 'vue';
-watch(profile, (newProfile, oldProfile) => {
-    console.log('👀 Profil changé:');
-    console.log('Ancien:', oldProfile);
-    console.log('Nouveau:', newProfile);
-}, { deep: true });
+watch(profile, (newProfile) => {
+  console.log("Profil mis à jour :", newProfile);
+});
 
 const placeOrder = async () => {
-    console.log('\n=== PLACEMENT DE COMMANDE ===');
-    console.log('📋 Adresse utilisée:', defaultAddress);
-    console.log('🔄 Sauvegarde des adresses...');
-    
-    loading.value = true;
-    error.value = '';
-    
-    try {
-        const addressResponse = await orderService.saveAddresses(defaultAddress);
-        console.log('✅ Adresses sauvegardées:', addressResponse);
-        
-        console.log('🚚 Sauvegarde livraison...');
-        const shippingResponse = await orderService.saveShipping();
-        console.log('✅ Livraison sauvegardée:', shippingResponse);
-        
-        console.log('💳 Sauvegarde paiement...');
-        const paymentResponse = await orderService.savePayment();
-        console.log('✅ Paiement sauvegardé:', paymentResponse);
-        
-        console.log('📦 Finalisation de la commande...');
-        const orderResponse = await orderService.placeOrder();
-console.log('Order response complet:', JSON.stringify(orderResponse));
+  loading.value = true;
+  error.value = "";
 
-const orderId = orderResponse?.data?.order?.id 
-    || orderResponse?.data?.id 
-    || orderResponse?.order?.id;
+  try {
+    await orderService.saveAddresses(defaultAddress);
 
-if (orderId) {
-    router.push('/orders');
-} else {
-    error.value = orderResponse?.message || 'Erreur lors de la commande';
-}
-        if (orderResponse?.data?.order?.id) {
-            console.log(`✅ Commande créée avec succès ! ID: ${orderResponse.data.order.id}`);
-            router.push('/orders');
-        } else {
-            console.error('❌ Pas d\'ID de commande dans la réponse');
-            error.value = orderResponse?.message || 'Erreur lors de la commande';
-        }
-        
-    } catch (e) {
-        console.error('❌ ERREUR lors de la commande:');
-        console.error('- Message:', e.message);
-        console.error('- Status:', e.response?.status);
-        console.error('- Data:', e.response?.data);
-        error.value = e.message;
-    } finally {
-        loading.value = false;
-        console.log('=== FIN PLACEMENT COMMANDE ===\n');
+    await orderService.saveShipping();
+
+    await orderService.savePayment();
+
+    const orderResponse = await orderService.placeOrder();
+
+    const orderId =
+      orderResponse?.data?.order?.id ||
+      orderResponse?.data?.id ||
+      orderResponse?.order?.id;
+
+    if (orderId) {
+      console.log("Commande créée :", orderId);
+      router.push("/orders");
+    } else {
+      error.value = "Erreur lors de la commande";
     }
+  } catch (e) {
+    console.error("Erreur commande :", e);
+    error.value = e.message;
+  } finally {
+    loading.value = false;
+  }
 };
 </script>
 
 <template>
-    <div class="checkout-page">
-        <h1>Finaliser la commande</h1>
-        
-        <!-- Affichage du profil pour déboguer -->
-        <div v-if="profile" class="profile-info">
-            <h3>👤 Informations client</h3>
-            <p><strong>Nom:</strong> {{ profile.first_name }} {{ profile.last_name }}</p>
-            <p><strong>Email:</strong> {{ profile.email }}</p>
-            <p><strong>ID:</strong> {{ profile.id }}</p>
-        </div>
-        <div v-else class="profile-info loading">
-            <p>🔄 Chargement du profil...</p>
-        </div>
-        
-        <p v-if="error" class="error">{{ error }}</p>
-        
-        <div class="summary">
-            <p>🚚 Livraison : <strong>Gratuite</strong></p>
-            <p>💳 Paiement : <strong>À la livraison</strong></p>
-        </div>
-        
-        <button class="btn-primary" :disabled="loading" @click="placeOrder">
-            {{ loading ? 'Traitement...' : 'Confirmer la commande' }}
-        </button>
+  <div class="checkout-page">
+    <div class="top-bar">
+      <button class="btn-back" @click="router.back()">Retour</button>
+
+      <h1>Finaliser la commande</h1>
     </div>
+
+    <div v-if="profile" class="profile-info">
+      <h3>Informations client</h3>
+
+      <p>
+        <strong>Nom :</strong>
+        {{ profile.first_name }} {{ profile.last_name }}
+      </p>
+
+      <p>
+        <strong>Email :</strong>
+        {{ profile.email }}
+      </p>
+
+      <p>
+        <strong>ID :</strong>
+        {{ profile.id }}
+      </p>
+    </div>
+
+    <div v-else class="profile-info loading-profile">
+      Chargement du profil...
+    </div>
+
+    <p v-if="error" class="error">
+      {{ error }}
+    </p>
+
+    <div class="summary">
+      <p>
+        Livraison :
+        <strong>Gratuite</strong>
+      </p>
+
+      <p>
+        Paiement :
+        <strong>À la livraison</strong>
+      </p>
+    </div>
+
+    <button class="btn-primary" :disabled="loading" @click="placeOrder">
+      {{ loading ? "Traitement..." : "Confirmer la commande" }}
+    </button>
+  </div>
 </template>
 
 <style scoped>
-.checkout-page { 
-    max-width: 400px; 
-    margin: 2rem auto; 
-    padding: 1rem; 
+.checkout-page {
+  max-width: 650px;
+  margin: 40px auto;
+  padding: 30px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: white;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 28px;
+  color: #222;
+}
+
+.btn-back {
+  padding: 10px 16px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.btn-back:hover {
+  background: #f5f5f5;
 }
 
 .profile-info {
-    background: #e3f2fd;
-    padding: 1rem;
-    border-radius: 4px;
-    margin: 1rem 0;
-    font-size: 14px;
+  background: #f8f9fb;
+  padding: 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  line-height: 1.7;
 }
 
-.profile-info.loading {
-    background: #f5f5f5;
-    color: #666;
+.loading-profile {
+  color: #666;
 }
 
-.summary { 
-    background: #f9f9f9; 
-    padding: 1rem; 
-    border-radius: 4px; 
-    margin: 1rem 0; 
+.summary {
+  background: #fafafa;
+  padding: 18px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #eee;
 }
 
-.error { 
-    color: red; 
+.error {
+  color: #c62828;
+  background: #ffebee;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 20px;
 }
 
-.btn-primary { 
-    width: 100%; 
-    padding: 0.75rem; 
-    background: #000; 
-    color: #fff; 
-    border: none; 
-    cursor: pointer; 
-    border-radius: 4px; 
+.btn-primary {
+  width: 100%;
+  padding: 14px;
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: 0.2s ease;
 }
 
-.btn-primary:disabled { 
-    opacity: 0.5; 
+.btn-primary:hover {
+  background: #333;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

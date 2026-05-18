@@ -18,6 +18,7 @@ export const adminOrderService = {
                 source: 1,
                 carrier_title: 'Livraison',
                 track_number: '',
+                // total_qty: Object.values(items).reduce((total, item) => total + item.qty, 0)
                 total_qty: Object.values(items).reduce((a, b) => a + Object.values(b)[0], 0),
                 items
             }

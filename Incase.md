@@ -1,45 +1,15 @@
-import { clientApi } from '@/api/clientApi';
-
-export const orderService = {
-    // Étape 1 : sauvegarder l'adresse
-    saveAddresses(address) {
-        return clientApi('/api/checkout/onepage/addresses', 'POST', {
-            billing: {
-                ...address,
-                use_for_shipping: true,
-            },
-            shipping: {
-                ...address,
-            },
-        });
-    },
-
-    // Étape 2 : sélectionner livraison gratuite (free / flatrate)
-    saveShipping(shippingMethodCode = 'free_free') {
-        return clientApi('/api/checkout/onepage/shipping-methods', 'POST', {
-            shipping_method: shippingMethodCode,
-        });
-    },
-
-    // Étape 3 : forcer "paiement à la livraison"
-    savePayment() {
-        return clientApi('/api/checkout/onepage/payment-methods', 'POST', {
-            payment: { method: 'cashondelivery' },
-        });
-    },
-
-    // Étape 4 : passer la commande
-    placeOrder() {
-        return clientApi('/api/checkout/onepage/orders', 'POST');
-    },
-
-    // Mes commandes
-    getOrders() {
-        return clientApi('/api/v1/customer/orders', 'GET');
-    },
-
-    // Détail d'une commande
-    getOrder(orderId) {
-        return clientApi(`/api/v1/customer/orders/${orderId}`, 'GET');
-    },
+const parseCSV = (text) => {
+const lines = text.trim().split("\n");
+const headers = lines[0].split(";").map((h) => h.trim()); // ← , devient ;
+return lines.slice(1).map((line) => {
+const row = {};
+const regex = /(".\*?"|[^;]+)(?=;|$)/g; // ← , devient ; dans la regex aussi
+    const values = [];
+    let match;
+    while ((match = regex.exec(line)) !== null) {
+      values.push(match[1].replace(/^"|"$/g, "").trim());
+}
+headers.forEach((h, i) => (row[h] = values[i] ?? ""));
+return row;
+});
 };

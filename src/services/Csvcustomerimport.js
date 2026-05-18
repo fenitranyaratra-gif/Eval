@@ -43,17 +43,17 @@ export const csvCustomerImportService = {
 
                 
                 if (response?.message === 'Votre compte a été créé avec succès.' || response?.data?.id || response?.data?.token) {
-    results.push({ 
-        email: row.email, 
-        status: 'success', 
-        id: response?.data?.id || response?.data?.customer?.id || 'N/A',
-        name: `${row.prenom} ${row.nom}`
-    });
-} else {
-    let msg = response?.message || 'Création échouée';
-    if (response?.errors) msg = Object.values(response.errors).flat().join(' | ');
-    results.push({ email: row.email, status: 'error', message: msg });
-}
+                    results.push({ 
+                        email: row.email, 
+                        status: 'success', 
+                        id: response?.data?.id || response?.data?.customer?.id || 'N/A',
+                        name: `${row.prenom} ${row.nom}`
+                    });
+                } else {
+                    let msg = response?.message || 'Création échouée';
+                    if (response?.errors) msg = Object.values(response.errors).flat().join(' | ');
+                    results.push({ email: row.email, status: 'error', message: msg });
+                }
 
             } catch (e) {
                 results.push({ email: row.email, status: 'error', message: e.message });

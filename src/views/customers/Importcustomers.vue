@@ -65,7 +65,6 @@ const reset = () => {
     <div class="import-page">
         <h1>Import Clients CSV</h1>
 
-        <!-- Zone upload -->
         <div class="upload-zone" @click="fileInput.click()">
             <input ref="fileInput" type="file" accept=".csv" style="display:none" @change="onFileChange" />
             <p v-if="!file">Cliquez pour choisir un fichier CSV</p>
